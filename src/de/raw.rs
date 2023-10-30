@@ -5,10 +5,10 @@ use std::{
     sync::Arc,
 };
 
+use bstr::ByteSlice;
 use serde::{
     de::{EnumAccess, Error as SerdeError, IntoDeserializer, MapAccess, VariantAccess},
-    forward_to_deserialize_any,
-    Deserializer as SerdeDeserializer,
+    forward_to_deserialize_any, Deserializer as SerdeDeserializer,
 };
 
 use crate::{
@@ -16,27 +16,12 @@ use crate::{
     raw::{RawBinaryRef, RAW_ARRAY_NEWTYPE, RAW_BSON_NEWTYPE, RAW_DOCUMENT_NEWTYPE},
     spec::{BinarySubtype, ElementType},
     uuid::UUID_NEWTYPE_NAME,
-    Bson,
-    DateTime,
-    Decimal128,
-    DeserializerOptions,
-    RawDocument,
-    Timestamp,
+    Bson, DateTime, Decimal128, DeserializerOptions, RawDocument, Timestamp,
 };
 
 use super::{
-    read_bool,
-    read_f128,
-    read_f64,
-    read_i32,
-    read_i64,
-    read_string,
-    read_u8,
-    DeserializerHint,
-    Error,
-    Result,
-    MAX_BSON_SIZE,
-    MIN_CODE_WITH_SCOPE_SIZE,
+    read_bool, read_f128, read_f64, read_i32, read_i64, read_string, read_u8, DeserializerHint,
+    Error, Result, MAX_BSON_SIZE, MIN_CODE_WITH_SCOPE_SIZE,
 };
 use crate::de::serde::MapDeserializer;
 
@@ -1720,7 +1705,7 @@ struct BsonBuf<'a> {
 impl<'a> Read for BsonBuf<'a> {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         self.index_check()?;
-        let bytes_read = self.bytes[self.index..].as_ref().read(buf)?;
+        let bytes_read = (&self.bytes[self.index..]).read(buf)?;
         self.index += bytes_read;
         Ok(bytes_read)
     }
@@ -1757,9 +1742,9 @@ impl<'a> BsonBuf<'a> {
     fn str(&mut self, start: usize, utf8_lossy_override: Option<bool>) -> Result<Cow<'a, str>> {
         let bytes = &self.bytes[start..self.index];
         let s = if utf8_lossy_override.unwrap_or(self.utf8_lossy) {
-            String::from_utf8_lossy(bytes)
+            bytes.to_str_lossy()
         } else {
-            Cow::Borrowed(std::str::from_utf8(bytes).map_err(Error::custom)?)
+            Cow::Borrowed(bytes.to_str().map_err(Error::custom)?)
         };
 
         // consume the null byte

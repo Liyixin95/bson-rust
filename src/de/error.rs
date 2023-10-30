@@ -1,4 +1,4 @@
-use std::{error, fmt, fmt::Display, io, string, sync::Arc};
+use std::{error, fmt, fmt::Display, io, sync::Arc};
 
 use serde::de::{self, Unexpected};
 
@@ -13,7 +13,7 @@ pub enum Error {
 
     /// A [`std::string::FromUtf8Error`](https://doc.rust-lang.org/std/string/struct.FromUtf8Error.html) encountered
     /// while decoding a UTF-8 String from the input data.
-    InvalidUtf8String(string::FromUtf8Error),
+    InvalidUtf8String(bstr::Utf8Error),
 
     /// While decoding a [`Document`](crate::Document) from bytes, an unexpected or unsupported
     /// element type was encountered.
@@ -44,8 +44,8 @@ impl From<io::Error> for Error {
     }
 }
 
-impl From<string::FromUtf8Error> for Error {
-    fn from(err: string::FromUtf8Error) -> Error {
+impl From<bstr::Utf8Error> for Error {
+    fn from(err: bstr::Utf8Error) -> Error {
         Error::InvalidUtf8String(err)
     }
 }

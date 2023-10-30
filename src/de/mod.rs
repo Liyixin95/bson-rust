@@ -38,14 +38,14 @@ use crate::{
     raw::RawBinaryRef,
     ser::write_i32,
     spec::{self, BinarySubtype},
-    Binary,
-    Decimal128,
+    Binary, Decimal128,
 };
 
 use ::serde::{
     de::{DeserializeOwned, Error as _, Unexpected},
     Deserialize,
 };
+use bstr::ByteVec;
 
 pub(crate) use self::serde::{convert_unsigned_to_signed_raw, BsonVisitor};
 
@@ -111,11 +111,11 @@ pub(crate) fn read_string<R: Read + ?Sized>(reader: &mut R, utf8_lossy: bool) ->
     let s = if utf8_lossy {
         let mut buf = Vec::with_capacity(len as usize - 1);
         reader.take(len as u64 - 1).read_to_end(&mut buf)?;
-        String::from_utf8_lossy(&buf).to_string()
+        buf.into_string_lossy()
     } else {
-        let mut s = String::with_capacity(len as usize - 1);
-        reader.take(len as u64 - 1).read_to_string(&mut s)?;
-        s
+        let mut buf = Vec::with_capacity(len as usize - 1);
+        reader.take(len as u64 - 1).read_to_end(&mut buf)?;
+        buf.into_string().map_err(|e| e.utf8_error().clone())?
     };
 
     // read the null terminator
@@ -152,7 +152,7 @@ fn read_cstring<R: Read + ?Sized>(reader: &mut R) -> Result<String> {
         v.push(c);
     }
 
-    Ok(String::from_utf8(v)?)
+    Ok(v.into_string().map_err(|e| e.utf8_error().clone())?)
 }
 
 #[inline]

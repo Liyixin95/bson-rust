@@ -126,6 +126,8 @@ mod test;
 
 use std::convert::{TryFrom, TryInto};
 
+use bstr::ByteSlice;
+
 use crate::de::MIN_BSON_STRING_SIZE;
 
 pub use self::{
@@ -133,11 +135,7 @@ pub use self::{
     array_buf::RawArrayBuf,
     bson::{RawBson, RawJavaScriptCodeWithScope},
     bson_ref::{
-        RawBinaryRef,
-        RawBsonRef,
-        RawDbPointerRef,
-        RawJavaScriptCodeWithScopeRef,
-        RawRegexRef,
+        RawBinaryRef, RawBsonRef, RawDbPointerRef, RawJavaScriptCodeWithScopeRef, RawRegexRef,
     },
     document::RawDocument,
     document_buf::RawDocumentBuf,
@@ -255,7 +253,8 @@ fn read_lenencoded(buf: &[u8]) -> Result<&str> {
 }
 
 fn try_to_str(data: &[u8]) -> Result<&str> {
-    std::str::from_utf8(data).map_err(|e| Error::new_without_key(ErrorKind::Utf8EncodingError(e)))
+    data.to_str()
+        .map_err(|e| Error::new_without_key(ErrorKind::Utf8EncodingError(e)))
 }
 
 fn usize_try_from_i32(i: i32) -> Result<usize> {
